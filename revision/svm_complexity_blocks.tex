@@ -174,10 +174,10 @@ The KNN-based scheme computes the Euclidean distance from $\mathbf{t}$ to
 all $M$ stored training vectors, which costs $\mathcal{O}(MN)$. It then
 selects the $K$ nearest neighbors and takes a majority vote, which costs
 $\mathcal{O}(M)$. Its overall complexity is therefore $\mathcal{O}(MN)$.
-The RF-based scheme passes $\mathbf{t}$ through $B$ fully grown decision
+The RF-based scheme passes $\mathbf{t}$ through $N_{\mathrm{tree}}$ fully grown decision
 trees, whose average depth is $\mathcal{O}(\log M)$, and averages their
 $N_S$ class scores. Including the formation of the feature vector, its
-complexity is $\mathcal{O}\big(N+B(\log M+N_S)\big)$.
+complexity is $\mathcal{O}\big(N+N_{\mathrm{tree}}(\log M+N_S)\big)$.
 
 \emph{Offline complexity:} All ML-based schemes require labels for the
 $M$ training samples. These are obtained by applying the ETAS rule to
@@ -190,9 +190,9 @@ kernel matrix therefore costs $\mathcal{O}(M^2N/N_S^2)$, which amounts to
 $\mathcal{O}(M^2N)$ over all classifiers. Under OVR, every binary problem
 uses all $M$ samples, so this cost rises to $\mathcal{O}(N_SM^2N)$, which
 motivates the OVO strategy adopted in Section~\ref{subsubsec:svm}.
-Growing $B$ trees, each of which examines $\sqrt{N}$ randomly chosen
+Growing $N_{\mathrm{tree}}$ trees, each of which examines $\sqrt{N}$ randomly chosen
 features at every split, requires
-$\mathcal{O}(B\sqrt{N}M\log^2M)$ operations on
+$\mathcal{O}(N_{\mathrm{tree}}\sqrt{N}M\log^2M)$ operations on
 average~\cite{Louppe_2014_RF}.
 
 Table~\ref{tab:selection_comparison_modified} shows that the ETAS rule
@@ -215,7 +215,7 @@ governs a tradeoff between secrecy performance and selection complexity.
 % ---------------------------------------------------------------------
 \begin{table}[t]
 	\caption{Complexity and Overhead of Different TAS Schemes
-	\rev{($M$: training-set size; $N_{\mathrm{SV}}$: total number of support vectors; $B$: number of trees)}}
+	\rev{($M$: training-set size; $N_{\mathrm{SV}}$: total number of support vectors; $N_{\mathrm{tree}}$: number of trees)}}
 	\label{tab:selection_comparison_modified}
 	\centering
 	\resizebox{\columnwidth}{!}{
@@ -228,15 +228,15 @@ governs a tradeoff between secrecy performance and selection complexity.
 			\makecell{\textbf{\rev{Online} Selection}\\\textbf{Complexity}} &
 			\rev{$\mathcal{O}(N)$} & \rev{$\mathcal{O}(N_{\mathrm{SV}}N)$} &
 			\rev{$\mathcal{O}(MN)$} & \rev{$\mathcal{O}(MN)$} &
-			\rev{$\mathcal{O}\big(N+B(\log M+N_S)\big)$} \\
+			\rev{$\mathcal{O}\big(N+N_{\mathrm{tree}}(\log M+N_S)\big)$} \\
 			\hline
 			\rev{\makecell{\textbf{Offline Complexity}\\\textbf{(labeling + training)}}} &
 			\rev{--} & \rev{$\mathcal{O}(M^2N)$} & \rev{$\mathcal{O}(MN)$} &
-			\rev{$\mathcal{O}(MN)$} & \rev{$\mathcal{O}(MN+B\sqrt{N}M\log^2M)$} \\
+			\rev{$\mathcal{O}(MN)$} & \rev{$\mathcal{O}(MN+N_{\mathrm{tree}}\sqrt{N}M\log^2M)$} \\
 			\hline
 			\rev{\textbf{Storage}} &
 			\rev{--} & \rev{$\mathcal{O}(N_{\mathrm{SV}}N)$} & \rev{$\mathcal{O}(MN)$} &
-			\rev{$\mathcal{O}(MN)$} & \rev{$\mathcal{O}(BM)$} \\
+			\rev{$\mathcal{O}(MN)$} & \rev{$\mathcal{O}(N_{\mathrm{tree}}M)$} \\
 			\hline
 	\end{tabular}	}
 \vsp{-5mm}
