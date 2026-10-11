@@ -1,6 +1,13 @@
 % =====================================================================
 %  SVM + complexity revision blocks (GLOBECOM 2026 reviewer items
 %  P1-#1, P1-#3, P1-#5). Blue = changed relative to the submitted PDF.
+%  Matched to SOPvsGAMMA_2ALPHAoptimalRF.m:
+%    SVM : fitcecoc (one-vs-one), templateSVM rbf, KernelScale 'auto',
+%          Standardize true, BoxConstraint default (C = 1),
+%          predict = loss-weighted decoding with hinge loss
+%    NB  : fitcnb 'DistributionNames','kernel'  (kernel density NB)
+%    RF  : fitcensemble 'Bag', 100 trees, templateTree() defaults
+%    M   : training_samples = 2000
 %  Paste each block at the location given in its header comment.
 % =====================================================================
 
@@ -13,8 +20,6 @@
 
 % ---------------------------------------------------------------------
 % BLOCK 1 -- Sec. III-A: replace  \subsection{Preparation for Learning}
-%            (the SVM text references Sec.~\ref{subsec:feature}, which
-%            is currently undefined and prints "Sec. ??")
 % ---------------------------------------------------------------------
 \subsection{Preparation for Learning}
 \label{subsec:feature}
@@ -46,13 +51,13 @@ samples~\cite{Bottou_Lin_2007_LSKM}, the total training cost of OVO is
 lower than that of OVR, and the gap widens as $N_S$
 grows~\cite{Hsu_Lin_2002_TNN}. For $N_S=2$, both strategies reduce to a
 single binary classifier.
-Prior to training, each element of the normalized feature vector
-$\mathbf{t}_m$ in \eqref{norm_feature_vec} is further standardized to
+Prior to training, each element of the feature vector is standardized to
 zero mean and unit variance using the sample statistics of the training
-set. With a slight abuse of notation, we retain the symbol $\mathbf{t}_m$
-for the standardized vector. The parameters of the $(i,j)$-th classifier
-are obtained by solving the following regularized hinge-loss minimization
-problem~\cite{He_2018_wcLet,Hsu_Lin_2002_TNN}
+samples in $\mathcal{M}_{ij}$. With a slight abuse of notation, we denote
+the standardized feature vector of the $m^{\text{th}}$ sample by
+$\mathbf{t}_m$ and omit its dependence on $(i,j)$. The parameters of the
+$(i,j)$-th classifier are obtained by solving the following regularized
+hinge-loss minimization problem~\cite{He_2018_wcLet,Hsu_Lin_2002_TNN}
 \begin{multline}\label{eq:SVM}
 \{\mathbf{u}_{ij},\kappa_{ij}\} = \argmin_{\mathbf{u}_{ij},\kappa_{ij}}
 C \!\!\sum_{m\in\mathcal{M}_{ij}}\!\! \Big[ w_{ij}[m]\,\text{cost}_1\!\left(\mathbf{u}_{ij}^T \mathbf{f}(\mathbf{t}_m)+\kappa_{ij}\right) \\
@@ -67,10 +72,10 @@ $\mathbf{f}(\mathbf{t}_m)\in\mathbb{R}^{|\mathcal{M}_{ij}|\times 1}$
 denotes the kernel feature map of the $m^{\text{th}}$ training sample.
 It is obtained with a Gaussian radial basis function (RBF) kernel, and
 its $q^{\text{th}}$ element, $q\in\mathcal{M}_{ij}$, is given by
-$f_q(\mathbf{t}_m) = \exp\!\left(-\|\mathbf{t}_m -\mathbf{t}_q\|^2/(2\sigma^2)\right)$,
-where $\sigma^2$ is the kernel width. The matrix $\mathbf{K}_{ij}$ is the
-corresponding kernel (Gram) matrix, whose columns are
-$\mathbf{f}(\mathbf{t}_m)$, $m\in\mathcal{M}_{ij}$. The term
+$f_q(\mathbf{t}_m) = \exp\!\left(-\|\mathbf{t}_m -\mathbf{t}_q\|^2/s_{ij}^2\right)$,
+where $s_{ij}$ is the kernel scale of the $(i,j)$-th classifier. The
+matrix $\mathbf{K}_{ij}$ is the corresponding kernel (Gram) matrix, whose
+columns are $\mathbf{f}(\mathbf{t}_m)$, $m\in\mathcal{M}_{ij}$. The term
 $\tfrac{1}{2}\mathbf{u}_{ij}^T\mathbf{K}_{ij}\mathbf{u}_{ij}$ is the
 squared norm of the separating hyperplane in the kernel-induced feature
 space, so minimizing it maximizes the margin. Further, $w_{ij}[m]=1$ if
@@ -79,45 +84,43 @@ $w_{ij}[m]=0$ if it is labeled as class $j$. The hinge-type losses are
 defined as $\text{cost}_k(z)=\max\!\left((-1)^k z+1,\,0\right)$ for
 $k\in\{0,1\}$, so that $\text{cost}_1(\cdot)$ and $\text{cost}_0(\cdot)$
 penalize margin violations of class $i$ and class $j$, respectively.
-% !!! Replace with what the simulation code actually did !!!
-The hyperparameters $C$ and $\sigma^2$ are selected by $5$-fold
-cross-validation on the training set, which yields
-$C=$~[\,\textbf{value}\,] and $\sigma^2=$~[\,\textbf{value}\,].
+We set $C=1$, and the kernel scale $s_{ij}$ is selected for each binary
+classifier by a subsampling-based heuristic applied to its training
+samples~\cite{MathWorks_fitcecoc}.
 Problem \eqref{eq:SVM} is the standard soft-margin kernel SVM. It admits
 a sparse solution in which $u_{ij,q}\neq 0$ only for the training samples
 that lie on or inside the margin, i.e., the support
 vectors~\cite{Bottou_Lin_2007_LSKM}. Let
 $\mathcal{V}_{ij}\subseteq\mathcal{M}_{ij}$ denote the support-vector set
-of the $(i,j)$-th classifier, and let
-$N_{\mathrm{SV}}=\big|\bigcup_{i<j}\mathcal{V}_{ij}\big|\leq M$ denote
-the number of distinct support vectors. Only these $N_{\mathrm{SV}}$
-vectors are stored after training.
+of the $(i,j)$-th classifier. Only these vectors are stored after
+training, and their total number is
+$N_{\mathrm{SV}}=\sum_{i<j}|\mathcal{V}_{ij}|\leq (N_S-1)M$.
 
 After training, the parameters $\{\mathbf{u}_{ij},\kappa_{ij}\}$ are
 obtained for all $1\leq i<j\leq N_S$, and the SVM model can then perform
 antenna selection. For a new CSI instance, a feature vector
 $\mathbf{t}\in \mathbb{R}^{1\times N}$ is generated following the feature
-extraction process of Sec.~\ref{subsec:feature} and standardized using
-the stored training statistics. The decision value of the $(i,j)$-th
-classifier is computed from its support vectors as
+extraction process of Sec.~\ref{subsec:feature}. For each classifier, it
+is standardized with the stored statistics of $\mathcal{M}_{ij}$. The
+decision value of the $(i,j)$-th classifier is then computed from its
+support vectors as
 \begin{equation}\label{eq:SVM_dec}
 z_{ij}(\mathbf{t}) = \sum_{q\in\mathcal{V}_{ij}} u_{ij,q}\,
-\exp\!\left(-\frac{\|\mathbf{t}-\mathbf{t}_q\|^2}{2\sigma^2}\right) + \kappa_{ij},
+\exp\!\left(-\frac{\|\mathbf{t}-\mathbf{t}_q\|^2}{s_{ij}^2}\right) + \kappa_{ij},
 \end{equation}
-and each binary classifier casts a vote
-\begin{equation}\label{eq:SVM_vote}
-v_{ij}(\mathbf{t}) =
-\begin{cases}
-i, & z_{ij}(\mathbf{t}) \geq 0,\\
-j, & \text{otherwise}.
-\end{cases}
-\end{equation}
-The predicted antenna index is determined by the OVO majority-vote rule
+where $z_{ij}(\mathbf{t})>0$ favors class $i$. Hard majority voting
+discards the margin information and may produce ties. We therefore
+combine the $N_S(N_S-1)/2$ decision values by loss-weighted decoding with
+the hinge loss~\cite{Escalera_2010_TPAMI}. The selected antenna is the
+class whose $N_S-1$ pairwise classifiers incur the smallest total hinge
+loss, i.e.,
 \begin{equation}\label{eq:SVM_decision}
-l^{\ast} = \argmax_{1\leq l \leq N_S} \ \sum_{1\leq i<j\leq N_S}
-\mathbf{1}\!\left[v_{ij}(\mathbf{t}) = l\right],
+l^{\ast} = \argmin_{1\leq l \leq N_S}
+\Bigg[\sum_{j=l+1}^{N_S}\!\max\!\big(0,1-z_{lj}(\mathbf{t})\big)
++\sum_{i=1}^{l-1}\!\max\!\big(0,1+z_{il}(\mathbf{t})\big)\Bigg].
 \end{equation}
-where $\mathbf{1}[\cdot]$ denotes the indicator function.
+This rule can be interpreted as a soft majority vote, in which each
+pairwise classifier supports a class in proportion to its margin.
 }
 
 
@@ -125,17 +128,16 @@ where $\mathbf{1}[\cdot]$ denotes the indicator function.
 % BLOCK 3 -- Sec. V: replace the whole section, from
 %            \section{Computational complexity Analysis}
 %            up to (not including) \begin{table}[t]
-%            (the feedback-overhead sentence is kept as-is: it belongs
-%            to reviewer item P1-#2, not to this revision)
+%            The feedback-overhead sentence is kept as-is (reviewer item
+%            P1-#2 is handled separately).
 % ---------------------------------------------------------------------
 \section{Computational Complexity Analysis}
 \label{sec:complexity}
 We summarize the feedback overhead and selection complexity of different
-TAS \rev{schemes} in Table~\ref{tab:selection_comparison_modified}. Here,
-$N=N_S(N_D+N_E+2)$ for the active eavesdropping scenario, while
-$N=N_S(N_D+2)$ for the passive eavesdropping case. We observe that the
-ML-based schemes require only half the feedback overhead compared to the
-conventional scheme.
+TAS \rev{schemes} in Table~\ref{tab:selection_comparison_modified}.
+\rev{Here, $N$ denotes the length of the feature vector defined in
+Sec.~\ref{subsec:feature}.} We observe that the ML-based schemes require
+only half the feedback overhead compared to the conventional scheme.
 {\color{blue}
 We distinguish the online complexity, incurred in every coherence block
 to select the antenna, from the offline complexity of generating the
@@ -147,82 +149,94 @@ $N_S$ antennas in a single pass over the $N$ channel gains, which costs
 $\mathcal{O}(N)$. It then finds the maximum of $N_S$ rates by a linear
 search, which costs $\mathcal{O}(N_S)$ and requires no sorting. Its
 overall complexity is therefore $\mathcal{O}(N)$.
-For the SVM-based scheme, the $N$-dimensional RBF kernel in
-\eqref{eq:SVM_dec} is evaluated once for each of the $N_{\mathrm{SV}}$
-distinct support vectors and shared by all $N_S(N_S-1)/2$ OVO
-classifiers, which costs $\mathcal{O}(N_{\mathrm{SV}}N)$. Forming the
-decision values costs $\mathcal{O}(N_{\mathrm{SV}}N_S)$, since each
-support vector belongs to at most $N_S-1$ classifiers, and the voting in
-\eqref{eq:SVM_decision} costs $\mathcal{O}(N_S^2)$. Since $N>N_S$ and
-$N_{\mathrm{SV}}\geq N_S$, the overall complexity is
-$\mathcal{O}(N_{\mathrm{SV}}N)$, and the OVR strategy has the same
-dominant term. Because $N_{\mathrm{SV}}\leq M$ and typically grows
-linearly with $M$~\cite{Bottou_Lin_2007_LSKM}, this complexity is upper
-bounded by $\mathcal{O}(MN)$.
-% !!! Fill in from the trained model !!!
-In our simulations, $N_{\mathrm{SV}}=$~[\,\textbf{value}\,] for $M=10000$.
-The NB-based scheme with Gaussian class-conditional densities evaluates
-$N$ univariate likelihoods for each of the $N_S$ classes in
-\eqref{eq:NB_2} and then finds the maximum by a linear search, which
-costs $\mathcal{O}(N_SN)$. This cost does not depend on $M$, since only
-the $2N_SN$ class-conditional means and variances are stored.
+For the SVM-based scheme, each binary classifier evaluates the
+$N$-dimensional RBF kernel in \eqref{eq:SVM_dec} against each of its own
+support vectors. Over all $N_S(N_S-1)/2$ classifiers, this costs
+$\mathcal{O}(N_{\mathrm{SV}}N)$. Since every classifier has at least two
+support vectors, $N_{\mathrm{SV}}\geq N_S(N_S-1)$, so this term dominates
+both the per-classifier standardization cost, $\mathcal{O}(N_S^2N)$, and
+the decoding cost of \eqref{eq:SVM_decision}, $\mathcal{O}(N_S^2)$. The
+overall complexity is therefore $\mathcal{O}(N_{\mathrm{SV}}N)$. Because
+the number of support vectors typically grows linearly with the training
+set size~\cite{Bottou_Lin_2007_LSKM}, this complexity is upper bounded by
+$\mathcal{O}(N_SMN)$.
+% !!! Fill in from the trained model (see MATLAB snippet in the chat) !!!
+In our simulations, $N_{\mathrm{SV}}=$~[\,\textbf{value}\,] for
+$M=$~[\,\textbf{value}\,].
+The NB-based scheme estimates each class-conditional density
+$\prob{t_n\given l}$ in \eqref{eq:NB_2} by a Gaussian kernel density
+estimate over the training samples of class $l$. Evaluating these
+densities for all $N$ features and $N_S$ classes therefore requires
+$\sum_{l}M_l N = MN$ kernel evaluations, where $M_l$ is the number of
+training samples of class $l$. The subsequent search for the maximum
+costs $\mathcal{O}(N_S)$, so the overall complexity is $\mathcal{O}(MN)$.
 The KNN-based scheme computes the Euclidean distance from $\mathbf{t}$ to
 all $M$ stored training vectors, which costs $\mathcal{O}(MN)$. It then
 selects the $K$ nearest neighbors and takes a majority vote, which costs
 $\mathcal{O}(M)$. Its overall complexity is therefore $\mathcal{O}(MN)$.
+The RF-based scheme passes $\mathbf{t}$ through $B$ fully grown decision
+trees, whose average depth is $\mathcal{O}(\log M)$, and averages their
+$N_S$ class scores. Including the formation of the feature vector, its
+complexity is $\mathcal{O}\big(N+B(\log M+N_S)\big)$.
 
 \emph{Offline complexity:} All ML-based schemes require labels for the
 $M$ training samples. These are obtained by applying the ETAS rule to
 each sample, at a total cost of $\mathcal{O}(MN)$. Training the NB model
-requires computing the class-conditional means and variances, which
+requires computing the kernel bandwidth of each feature and class, which
 costs $\mathcal{O}(MN)$. KNN requires no training beyond storing the $M$
 feature vectors. For the SVM, each of the $N_S(N_S-1)/2$ OVO problems
 involves $|\mathcal{M}_{ij}|\approx 2M/N_S$ samples. Evaluating its
 kernel matrix therefore costs $\mathcal{O}(M^2N/N_S^2)$, which amounts to
 $\mathcal{O}(M^2N)$ over all classifiers. Under OVR, every binary problem
-uses all $M$ samples, so this cost rises to
-$\mathcal{O}(N_SM^2N)$, which motivates the OVO strategy adopted in
-Section~\ref{subsubsec:svm}.
+uses all $M$ samples, so this cost rises to $\mathcal{O}(N_SM^2N)$, which
+motivates the OVO strategy adopted in Section~\ref{subsubsec:svm}.
+Growing $B$ trees, each of which examines $\sqrt{N}$ randomly chosen
+features at every split, requires
+$\mathcal{O}(B\sqrt{N}M\log^2M)$ operations on
+average~\cite{Louppe_2014_RF}.
 
 Table~\ref{tab:selection_comparison_modified} shows that the ETAS rule
-has the lowest online complexity. Among the ML-based schemes, NB has the
-lowest online complexity, and it is independent of $M$. The complexity of
-the SVM-based scheme grows with the number of support vectors, while that
-of KNN grows linearly with the training-set size $M$. Hence, the ML-based
-schemes do not reduce the online computational complexity relative to
-ETAS. Instead, the training-set size and, for the SVM, the number of
-support vectors govern a tradeoff between secrecy performance and
-selection complexity.
+has the lowest online complexity. Among the ML-based schemes, RF has the
+lowest online complexity, which grows only logarithmically with the
+training-set size $M$. In contrast, the online complexity of the SVM
+(through $N_{\mathrm{SV}}$), kernel-based NB, and KNN schemes grows
+linearly with $M$. Hence, the ML-based schemes do not reduce the online
+computational complexity relative to ETAS. Instead, the training-set size
+governs a tradeoff between secrecy performance and selection complexity.
 }
 
 
 % ---------------------------------------------------------------------
 % BLOCK 4 -- Table I: replace the whole active \begin{table}[t] ...
 %            \end{table} that follows Sec. V (keep the commented-out
-%            older tables as they are). Fixes the broken "NsvN" cell,
-%            the O(N^2)/O(N) entries, and adds offline cost + storage.
+%            older tables as they are).
+%            The RF column assumes RF is added to the paper (reviewer
+%            item P2-#2); delete that column if it is not.
 % ---------------------------------------------------------------------
 \begin{table}[t]
 	\caption{Complexity and Overhead of Different TAS Schemes
-	\rev{($M$: training-set size; $N_{\mathrm{SV}}\leq M$: number of support vectors)}}
+	\rev{($M$: training-set size; $N_{\mathrm{SV}}$: total number of support vectors; $B$: number of trees)}}
 	\label{tab:selection_comparison_modified}
 	\centering
 	\resizebox{\columnwidth}{!}{
-		\begin{tabular}{|c|c|c|c|c|}
+		\begin{tabular}{|c|c|c|c|c|c|}
 			\hline
-			\textbf{Metric} & \textbf{ETAS} & \textbf{SVM \rev{(OVO)}} & \textbf{NB} & \textbf{KNN}\\
+			\textbf{Metric} & \textbf{ETAS} & \textbf{SVM \rev{(OVO)}} & \textbf{NB \rev{(kernel)}} & \textbf{KNN} & \rev{\textbf{RF}}\\
 			\hline
-			\textbf{Feedback Overhead}& $N$ complex values & \multicolumn{3}{c|}{$N$ real values}\\
+			\textbf{Feedback Overhead}& $N$ complex values & \multicolumn{4}{c|}{$N$ real values}\\
 			\hline
 			\makecell{\textbf{\rev{Online} Selection}\\\textbf{Complexity}} &
 			\rev{$\mathcal{O}(N)$} & \rev{$\mathcal{O}(N_{\mathrm{SV}}N)$} &
-			\rev{$\mathcal{O}(N_SN)$} & \rev{$\mathcal{O}(MN)$} \\
+			\rev{$\mathcal{O}(MN)$} & \rev{$\mathcal{O}(MN)$} &
+			\rev{$\mathcal{O}\big(N+B(\log M+N_S)\big)$} \\
 			\hline
 			\rev{\makecell{\textbf{Offline Complexity}\\\textbf{(labeling + training)}}} &
-			\rev{--} & \rev{$\mathcal{O}(M^2N)$} & \rev{$\mathcal{O}(MN)$} & \rev{$\mathcal{O}(MN)$} \\
+			\rev{--} & \rev{$\mathcal{O}(M^2N)$} & \rev{$\mathcal{O}(MN)$} &
+			\rev{$\mathcal{O}(MN)$} & \rev{$\mathcal{O}(MN+B\sqrt{N}M\log^2M)$} \\
 			\hline
 			\rev{\textbf{Storage}} &
-			\rev{--} & \rev{$\mathcal{O}(N_{\mathrm{SV}}N)$} & \rev{$\mathcal{O}(N_SN)$} & \rev{$\mathcal{O}(MN)$} \\
+			\rev{--} & \rev{$\mathcal{O}(N_{\mathrm{SV}}N)$} & \rev{$\mathcal{O}(MN)$} &
+			\rev{$\mathcal{O}(MN)$} & \rev{$\mathcal{O}(BM)$} \\
 			\hline
 	\end{tabular}	}
 \vsp{-5mm}
@@ -230,69 +244,84 @@ selection complexity.
 
 
 % ---------------------------------------------------------------------
-% BLOCK 5 -- Remove the old "comparable or lower complexity" claims,
-%            which are false once the complexities are corrected.
-%            Only the complexity clause is changed; the feedback-overhead
-%            wording is left for whoever handles reviewer item P1-#2.
+% BLOCK 5 -- Remove the old "comparable or lower complexity" claims.
+%            Only the complexity clause changes; the feedback-overhead
+%            wording is left for reviewer item P1-#2.
 % ---------------------------------------------------------------------
 
-% 5a -- Abstract, replace the last sentence
-%       ("Finally, we show that the ML-based schemes require comparable
-%        or lower computational complexity and reduced feedback ...")
+% 5a -- Abstract, replace the last sentence ("Finally, we show that ...")
 Finally, we show that the ML-based schemes require reduced feedback
 overhead\rev{, and we quantify their online and offline computational
-complexity: NB has the lowest online complexity among the ML-based
-schemes, whereas the complexity of SVM and KNN scales with the
-training-set size,} thereby illustrating performance versus complexity
-tradeoffs \rev{with respect to the ETAS rule}.
+complexity: the online complexity of the SVM-, NB- and KNN-based schemes
+grows with the training-set size, whereas that of RF grows only
+logarithmically with it,} thereby illustrating performance versus
+complexity tradeoffs \rev{with respect to the ETAS rule}.
 
-% 5b -- Introduction, 3rd contribution bullet, replace the last sentence
-%       ("Our analysis show that the proposed ML-based approaches require
-%        the half amount of feedback overhead and comparable or lower ...")
+% 5b -- Introduction, 3rd contribution bullet, replace its last sentence
+%       ("Our analysis show that the proposed ML-based approaches ...")
 Our analysis show that the proposed ML-based approaches require the half
 amount of feedback overhead \rev{as compared to the ETAS rule, at the cost
-of a higher online selection complexity that grows with the number of
-support vectors for SVM and with the training-set size for KNN, whereas
-the complexity of NB is independent of the training-set size}.
+of a higher online selection complexity that grows with the training-set
+size}.
 
 % 5c -- Conclusion, replace the last sentence
-%       ("The proposed ML-based approaches require the half amount of
-%        feedback overhead and comparable or lower computational ...")
+%       ("The proposed ML-based approaches require the half amount ...")
 The proposed ML-based approaches require the half amount of feedback
 overhead as compared to exhaustive TAS rule\rev{, at the cost of a higher
-online selection complexity, which grows with the training-set size for
-SVM and KNN,} while achieving near-optimal secrecy performance under
-interference constraints and energy harvesting.
+online selection complexity that grows with the training-set size,} while
+achieving near-optimal secrecy performance under interference constraints
+and energy harvesting.
 
-% 5d -- (optional) Sec. II-B "Challenges" paragraph, replace the last
-%       sentence ("Machine learning models, which can learn complex
-%        relations ... transferring the complexity to the offline training phase.")
+% 5d -- (optional) Sec. II-B "Challenges" paragraph, replace its last
+%       sentence ("Machine learning models, which can learn complex ...")
 Machine learning models, which can learn complex relations in a given
 data, can thus be exploited for TAS\rev{, with the computationally
 intensive training performed offline}.
 
 
 % ---------------------------------------------------------------------
-% BLOCK 6 -- BibTeX: append to Bibtex/priyanka.bib
+% BLOCK 6 -- NB subsection (Sec. III-B-2): add this sentence right after
+%            Eq. \eqref{eq:NB_2} and before "We note that the NB-based
+%            model can conduct antenna selection ..."
+%            (needed because the complexity of NB depends on it)
+% ---------------------------------------------------------------------
+\rev{Each class-conditional density $\prob{t_n\given l}$ is estimated
+non-parametrically by a Gaussian kernel density estimate over the training
+samples of class $l$, since the channel magnitudes are not Gaussian
+distributed.}
+
+
+% ---------------------------------------------------------------------
+% BLOCK 7 -- BibTeX: append to Bibtex/priyanka.bib
 % ---------------------------------------------------------------------
 % @article{Hsu_Lin_2002_TNN,
 %   author  = {C.-W. Hsu and C.-J. Lin},
 %   title   = {A comparison of methods for multiclass support vector machines},
 %   journal = {IEEE Trans. Neural Netw.},
-%   volume  = {13},
-%   number  = {2},
-%   pages   = {415--425},
-%   month   = mar,
-%   year    = {2002}
+%   volume  = {13}, number = {2}, pages = {415--425}, month = mar, year = {2002}
 % }
-%
 % @incollection{Bottou_Lin_2007_LSKM,
 %   author    = {L. Bottou and C.-J. Lin},
 %   title     = {Support vector machine solvers},
 %   booktitle = {Large Scale Kernel Machines},
 %   editor    = {L. Bottou and O. Chapelle and D. DeCoste and J. Weston},
-%   publisher = {MIT Press},
-%   address   = {Cambridge, MA, USA},
-%   pages     = {1--27},
-%   year      = {2007}
+%   publisher = {MIT Press}, address = {Cambridge, MA, USA},
+%   pages     = {1--27}, year = {2007}
+% }
+% @article{Escalera_2010_TPAMI,
+%   author  = {S. Escalera and O. Pujol and P. Radeva},
+%   title   = {On the decoding process in ternary error-correcting output codes},
+%   journal = {IEEE Trans. Pattern Anal. Mach. Intell.},
+%   volume  = {32}, number = {1}, pages = {120--134}, month = jan, year = {2010}
+% }
+% @phdthesis{Louppe_2014_RF,
+%   author = {G. Louppe},
+%   title  = {Understanding Random Forests: From Theory to Practice},
+%   school = {Univ. of Li\`ege}, address = {Li\`ege, Belgium}, year = {2014}
+% }
+% @misc{MathWorks_fitcecoc,
+%   author       = {{The MathWorks, Inc.}},
+%   title        = {fitcecoc: Fit multiclass models for support vector machines or other classifiers},
+%   howpublished = {Statistics and Machine Learning Toolbox documentation},
+%   year         = {2024}
 % }
