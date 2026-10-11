@@ -1,0 +1,160 @@
+% =====================================================================
+%  Remaining Priority-1 fixes (items 1, 2, 3, 4, 5).
+%  These SUPERSEDE Block 4 (Table I) and Block 5 (5a-5c) of
+%  svm_complexity_blocks.tex. Blue = changed vs. the submitted PDF.
+% =====================================================================
+
+
+% ---------------------------------------------------------------------
+% FIX A (item 1) -- citations. Append these entries, uncommented, to
+%                   Bibtex/priyanka.bib, then recompile.
+% ---------------------------------------------------------------------
+% @article{Hsu_Lin_2002_TNN,
+%   author  = {C.-W. Hsu and C.-J. Lin},
+%   title   = {A comparison of methods for multiclass support vector machines},
+%   journal = {IEEE Trans. Neural Netw.},
+%   volume  = {13}, number = {2}, pages = {415--425}, month = mar, year = {2002}
+% }
+% @incollection{Bottou_Lin_2007_LSKM,
+%   author    = {L. Bottou and C.-J. Lin},
+%   title     = {Support vector machine solvers},
+%   booktitle = {Large Scale Kernel Machines},
+%   editor    = {L. Bottou and O. Chapelle and D. DeCoste and J. Weston},
+%   publisher = {MIT Press}, address = {Cambridge, MA, USA},
+%   pages     = {1--27}, year = {2007}
+% }
+% @article{Escalera_2010_TPAMI,
+%   author  = {S. Escalera and O. Pujol and P. Radeva},
+%   title   = {On the decoding process in ternary error-correcting output codes},
+%   journal = {IEEE Trans. Pattern Anal. Mach. Intell.},
+%   volume  = {32}, number = {1}, pages = {120--134}, month = jan, year = {2010}
+% }
+% @phdthesis{Louppe_2014_RF,
+%   author = {G. Louppe},
+%   title  = {Understanding Random Forests: From Theory to Practice},
+%   school = {Univ. of Li\`ege}, address = {Li\`ege, Belgium}, year = {2014}
+% }
+% @misc{MathWorks_fitcecoc,
+%   author       = {{The MathWorks, Inc.}},
+%   title        = {fitcecoc: Fit multiclass models for support vector machines or other classifiers},
+%   howpublished = {Statistics and Machine Learning Toolbox documentation},
+%   year         = {2024}
+% }
+
+
+% ---------------------------------------------------------------------
+% FIX B (item 2) -- Sec. V, opening. Replace everything from
+%     We summarize the feedback overhead and selection complexity ...
+% down to and INCLUDING the line
+%     {\color{blue}
+% (i.e. the line just before "We distinguish the online complexity").
+% ---------------------------------------------------------------------
+We summarize the \rev{CSI feedback and the} selection complexity of
+different TAS \rev{schemes} in Table~\ref{tab:selection_comparison_modified}.
+\rev{Here, $N$ denotes the length of the feature vector defined in
+Sec.~\ref{subsec:feature}.}
+{\color{blue}
+\emph{CSI feedback:} We assume that the antenna is selected at $S$. $S$
+acquires $\mathbf{h}_{TS}$ by estimating the signal of $T$ during the
+energy harvesting phase, and it obtains $\mathbf{g}_{SX}$, e.g., through
+a band manager that coordinates the primary and secondary networks. $D$
+estimates $\mathbf{H}_{SD}$ and feeds it back to $S$, and so does $E$
+for $\mathbf{H}_{SE}$ under active eavesdropping. The SINRs in Sec.~II,
+and hence the ETAS rule, depend on these channels only through their
+magnitudes. ETAS therefore requires the same feedback as the ML-based
+schemes, namely $N_SN_D$ real values from $D$ and, under active
+eavesdropping, $N_SN_E$ real values from $E$. If the selection were
+instead made at $D$, every scheme would feed back only the selected
+index, i.e., $\lceil\log_2N_S\rceil$ bits. However, $D$ would then have
+to acquire $\mathbf{h}_{TS}$, $\mathbf{g}_{SX}$, and $\mathbf{H}_{SE}$.
+In either architecture, the ML-based schemes do not reduce the feedback
+overhead relative to ETAS.
+
+
+% ---------------------------------------------------------------------
+% FIX C (item 3) -- Sec. V: replace the two [value] placeholders.
+%   N_SV comes from MATLAB (snippet in the chat); M = training_samples.
+%   If you cannot re-run MATLAB, delete these two lines instead.
+% ---------------------------------------------------------------------
+In our simulations, $N_{\mathrm{SV}}=$~[\,\textbf{value}\,] for
+$M=2000$.
+
+
+% ---------------------------------------------------------------------
+% FIX D (item 5) -- Table I: replace the whole \begin{table}[t] ...
+%   \end{table} after Sec. V. Transposed (schemes as rows) so it is far
+%   less compressed by \resizebox; the feedback row is replaced by one
+%   line because feedback is now the same for all schemes (Fix B).
+% ---------------------------------------------------------------------
+\begin{table}[t]
+	\caption{\rev{Complexity of Different TAS Schemes}}
+	\label{tab:selection_comparison_modified}
+	\centering
+	\resizebox{\columnwidth}{!}{\color{blue}
+		\begin{tabular}{|c|c|c|c|}
+			\hline
+			\textbf{Scheme} &
+			\makecell{\textbf{Online selection}\\\textbf{complexity}} &
+			\makecell{\textbf{Offline complexity}\\\textbf{(labeling + training)}} &
+			\textbf{Storage}\\
+			\hline
+			ETAS & $\mathcal{O}(N)$ & -- & -- \\
+			\hline
+			SVM (OVO) & $\mathcal{O}(N_{\mathrm{SV}}N)$ & $\mathcal{O}(M^2N)$ & $\mathcal{O}(N_{\mathrm{SV}}N)$ \\
+			\hline
+			NB (kernel) & $\mathcal{O}(MN)$ & $\mathcal{O}(MN)$ & $\mathcal{O}(MN)$ \\
+			\hline
+			KNN & $\mathcal{O}(MN)$ & $\mathcal{O}(MN)$ & $\mathcal{O}(MN)$ \\
+			\hline
+			RF$^{\ast}$ & $\mathcal{O}(N_{\mathrm{tree}}\log M)$ & $\mathcal{O}(N_{\mathrm{tree}}\sqrt{N}M\log^2M)$ & $\mathcal{O}(N_{\mathrm{tree}}M)$ \\
+			\hline
+			\multicolumn{4}{|c|}{CSI feedback to $S$: identical for all schemes (Sec.~\ref{sec:complexity})}\\
+			\hline
+			\multicolumn{4}{|l|}{\footnotesize $M$: training-set size; $N_{\mathrm{SV}}$: total no.\ of support vectors; $N_{\mathrm{tree}}$: no.\ of trees.}\\
+			\multicolumn{4}{|l|}{\footnotesize $^{\ast}$Lower-order terms omitted; exact expressions in Sec.~\ref{sec:complexity}.}\\
+			\hline
+	\end{tabular}}
+\vsp{-5mm}
+\end{table}
+
+
+% ---------------------------------------------------------------------
+% FIX E (item 2) -- replace the blue sentences you pasted from Block 5.
+% ---------------------------------------------------------------------
+
+% E1 -- Abstract: replace the whole last sentence ("Finally, we show ...")
+\rev{Finally, we show that the ML-based schemes require the same CSI
+feedback as the ETAS rule, and we quantify their online and offline
+computational complexity: the online complexity of the SVM-, NB- and
+KNN-based schemes grows with the training-set size, whereas that of RF
+grows only logarithmically with it, thereby illustrating performance
+versus complexity tradeoffs with respect to the ETAS rule.}
+
+% E2 -- Introduction, 3rd bullet: replace the sentence starting "Our analysis show that"
+Our analysis \rev{shows that the ML-based schemes require the same CSI
+feedback as the ETAS rule and a higher online selection complexity that
+grows with the training-set size}.
+
+% E3 -- Conclusion: replace the last sentence ("The proposed ML-based approaches require ...")
+The proposed ML-based approaches \rev{require the same CSI feedback as
+the exhaustive ETAS rule and a higher online selection complexity that
+grows with the training-set size,} while achieving near-optimal secrecy
+performance under interference constraints and energy harvesting.
+
+
+% ---------------------------------------------------------------------
+% FIX F (item 4) -- Sec. II-A, "Interference from T" paragraph: add this
+%   right after the sentence that ends with
+%   \gamma_{S_j E} = P_{S_j} |\tilde{h}_{S_{j}E}|^2/\left(\sigma_{0}^2+P_T \mu_{TE}\right)$.
+%   and before \subsection{Energy-Aware Transmit Antenna Selection ...}
+% ---------------------------------------------------------------------
+\rev{We note that this averaged-interference model is a tractability
+assumption. The $T$--$D$ and $T$--$E$ links undergo block fading within
+the same coherence interval as the other links, so the instantaneous
+interference at $D$ and $E$ is random. Moreover, after MRC, the residual
+interference depends on the channel of the selected antenna, so fading
+interference can change which antenna maximizes the secrecy rate.
+Capturing it would require the $T$--$D$ and $T$--$E$ channels in the KPI
+and in the feature vectors of Sec.~\ref{subsec:feature}, and it would
+change the resulting labels, the classification accuracy, and the SOP.
+This extension is left for future work.}
